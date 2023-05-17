@@ -167,7 +167,8 @@ cat(substring(capture.output(print(grDevices:::compositingOperators[1:12])),
     (<a href="#cairo">Packard et al., 2021</a>) initially, 
     under the assumption that that implementation
     was "standard".  However, an attempt to add support to the graphics
-    device provided by the 'ggiraph' package highlighted some 
+    device provided by the 'ggiraph' package (<a href="#pkg:ggiraph">Gohel and Skintzos, 2023</a>)
+    highlighted some 
     "non-standard" behaviour in the Cairo-based devices.
     In particular, 
     the "clear" operator and "src" operators, in R 4.2.0, produce the
@@ -207,7 +208,10 @@ popViewport()
     compositing operators should now conform
     to the image below.  The Cairo devices and the <code>quartz()</code>
     device currently support compositing operators and adhere to
-    this behaviour.
+    this behaviour.  Support is under development for
+    the graphics devices provided by the packages
+    'ggiraph', 'svglite' (<a href="#pkg:svglite">Wickham et al., 2023</a>), and 
+    'ragg' (<a href="#pkg:ragg">Pedersen and Shemanarev, 2023</a>).
   </p>
 <!--begin.rcode echo=FALSE
 porterDuff <- function(src, dst) {
@@ -706,6 +710,17 @@ Dahlström, E., Dengler, P., Grasso, A., Lilley, C., McCormack, C., Schepers,
 
 </dd>
       <dt>
+[<a name="pkg:ggiraph">Gohel and Skintzos, 2023</a>]
+</dt>
+      <dd>
+Gohel, D. and Skintzos, P. (2023).
+ <em>ggiraph: Make 'ggplot2' Graphics Interactive</em>.
+ R package version 0.8.7.
+[ <a href="compositing-bib_bib.html#pkg:ggiraph">bib</a> | 
+<a href="https://CRAN.R-project.org/package=ggiraph">http</a> ]
+
+</dd>
+      <dt>
 [<a name="murrell-groups-2021">Murrell, 2021</a>]
 </dt>
       <dd>
@@ -754,6 +769,17 @@ Pedersen, S. S. (2013).
 
 </dd>
       <dt>
+[<a name="pkg:ragg">Pedersen and Shemanarev, 2023</a>]
+</dt>
+      <dd>
+Pedersen, T. L. and Shemanarev, M. (2023).
+ <em>ragg: Graphic Devices Based on AGG</em>.
+ R package version 1.2.5.
+[ <a href="compositing-bib_bib.html#pkg:ragg">bib</a> | 
+<a href="https://CRAN.R-project.org/package=ragg">http</a> ]
+
+</dd>
+      <dt>
 [<a name="PorterDuff">Porter and Duff, 1984</a>]
 </dt>
       <dd>
@@ -773,6 +799,18 @@ R Core Team (2023).
  R Foundation for Statistical Computing, Vienna, Austria.
 [ <a href="compositing-bib_bib.html#R">bib</a> | 
 <a href="https://www.R-project.org/">http</a> ]
+
+</dd>
+      <dt>
+[<a name="pkg:svglite">Wickham et al., 2023</a>]
+</dt>
+      <dd>
+Wickham, H., Henry, L., Pedersen, T. L., Luciani, T. J., Decorde, M., and Lise,
+  V. (2023).
+ <em>svglite: An 'SVG' Graphics Device</em>.
+ R package version 2.1.1.
+[ <a href="compositing-bib_bib.html#pkg:svglite">bib</a> | 
+<a href="https://CRAN.R-project.org/package=svglite">http</a> ]
 
 </dd>
     </dl>

@@ -167,7 +167,8 @@ cat(substring(capture.output(print(grDevices:::compositingOperators[1:12])),
     (<a href="#cairo"/>) initially, 
     under the assumption that that implementation
     was "standard".  However, an attempt to add support to the graphics
-    device provided by the 'ggiraph' package highlighted some 
+    device provided by the 'ggiraph' package (<a href="#pkg:ggiraph"/>)
+    highlighted some 
     "non-standard" behaviour in the Cairo-based devices.
     In particular, 
     the "clear" operator and "src" operators, in R 4.2.0, produce the
@@ -207,7 +208,10 @@ popViewport()
     compositing operators should now conform
     to the image below.  The Cairo devices and the <code>quartz()</code>
     device currently support compositing operators and adhere to
-    this behaviour.
+    this behaviour.  Support is under development for
+    the graphics devices provided by the packages
+    'ggiraph', 'svglite' (<a href="#pkg:svglite"/>), and 
+    'ragg' (<a href="#pkg:ragg"/>).
   </p>
     <rcode echo="FALSE"><![CDATA[
 porterDuff <- function(src, dst) {
@@ -687,6 +691,15 @@ porterDuff(src, dst)
       </li>
       <li>
         <a name="murrell-groups-2021"/>
+      </li>
+      <li>
+        <a name="pkg:ggiraph"/>
+      </li>
+      <li>
+        <a name="pkg:svglite"/>
+      </li>
+      <li>
+        <a name="pkg:ragg"/>
       </li>
     </ul>
     <h2>Footnotes</h2>
