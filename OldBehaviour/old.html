@@ -1,0 +1,37 @@
+
+This code is to be run with R 4.2.0 to produce images that reflect
+the old behaviour of Cairo compositing operators.
+
+
+    
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(grid)</span>
+</pre></div>
+</div></div>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">src</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">rectGrob</span><span class="hl std">(</span><span class="hl kwc">x</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl opt">/</span><span class="hl num">3</span><span class="hl std">,</span> <span class="hl kwc">y</span><span class="hl std">=</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">3</span><span class="hl std">,</span> <span class="hl kwc">width</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span> <span class="hl kwc">height</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span>
+                <span class="hl kwc">gp</span><span class="hl std">=</span><span class="hl kwd">gpar</span><span class="hl std">(</span><span class="hl kwc">col</span><span class="hl std">=</span><span class="hl num">NA</span><span class="hl std">,</span> <span class="hl kwc">fill</span><span class="hl std">=</span><span class="hl kwd">rgb</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">.9</span><span class="hl std">)))</span>
+<span class="hl std">dst</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">rectGrob</span><span class="hl std">(</span><span class="hl kwc">x</span><span class="hl std">=</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">3</span><span class="hl std">,</span> <span class="hl kwc">y</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl opt">/</span><span class="hl num">3</span><span class="hl std">,</span> <span class="hl kwc">width</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span> <span class="hl kwc">height</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span>
+                <span class="hl kwc">gp</span><span class="hl std">=</span><span class="hl kwd">gpar</span><span class="hl std">(</span><span class="hl kwc">col</span><span class="hl std">=</span><span class="hl num">NA</span><span class="hl std">,</span> <span class="hl kwc">fill</span><span class="hl std">=</span><span class="hl kwd">rgb</span><span class="hl std">(</span><span class="hl num">.7</span><span class="hl std">,</span> <span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">0</span><span class="hl std">)))</span>
+</pre></div>
+</div></div>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">group</span> <span class="hl kwb">&lt;-</span> <span class="hl kwa">function</span><span class="hl std">(</span><span class="hl kwc">src</span><span class="hl std">,</span> <span class="hl kwc">op</span><span class="hl std">,</span> <span class="hl kwc">dst</span><span class="hl std">) {</span>
+    <span class="hl kwd">pushViewport</span><span class="hl std">(</span><span class="hl kwd">viewport</span><span class="hl std">(</span><span class="hl kwc">width</span><span class="hl std">=</span><span class="hl num">.95</span><span class="hl std">,</span> <span class="hl kwc">height</span><span class="hl std">=</span><span class="hl num">.95</span><span class="hl std">))</span>
+    <span class="hl kwd">grid.rect</span><span class="hl std">()</span>
+    <span class="hl kwd">grid.group</span><span class="hl std">(src, op, dst)</span>
+    <span class="hl kwd">grid.text</span><span class="hl std">(op,</span> <span class="hl kwc">x</span><span class="hl std">=</span><span class="hl num">.1</span><span class="hl std">,</span> <span class="hl kwc">y</span><span class="hl std">=</span><span class="hl num">.1</span><span class="hl std">,</span> <span class="hl kwc">just</span><span class="hl std">=</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;left&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;bottom&quot;</span><span class="hl std">),</span>
+              <span class="hl kwc">gp</span><span class="hl std">=</span><span class="hl kwd">gpar</span><span class="hl std">(</span><span class="hl kwc">cex</span><span class="hl std">=</span><span class="hl num">.7</span><span class="hl std">,</span> <span class="hl kwc">fontfamily</span><span class="hl std">=</span><span class="hl str">&quot;HersheySans&quot;</span><span class="hl std">))</span>
+    <span class="hl kwd">popViewport</span><span class="hl std">()</span>
+<span class="hl std">}</span>
+</pre></div>
+</div></div>
+
+<div class="chunk" id="oldCairo"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">pushViewport</span><span class="hl std">(</span><span class="hl kwd">viewport</span><span class="hl std">(</span><span class="hl kwc">x</span><span class="hl std">=</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl kwc">width</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span> <span class="hl kwc">just</span><span class="hl std">=</span><span class="hl str">&quot;left&quot;</span><span class="hl std">))</span>
+<span class="hl kwd">group</span><span class="hl std">(src,</span> <span class="hl str">&quot;clear&quot;</span><span class="hl std">, dst)</span>
+<span class="hl kwd">popViewport</span><span class="hl std">()</span>
+<span class="hl kwd">pushViewport</span><span class="hl std">(</span><span class="hl kwd">viewport</span><span class="hl std">(</span><span class="hl kwc">x</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span> <span class="hl kwc">width</span><span class="hl std">=</span><span class="hl num">.5</span><span class="hl std">,</span> <span class="hl kwc">just</span><span class="hl std">=</span><span class="hl str">&quot;left&quot;</span><span class="hl std">))</span>
+<span class="hl kwd">group</span><span class="hl std">(src,</span> <span class="hl str">&quot;source&quot;</span><span class="hl std">, dst)</span>
+<span class="hl kwd">popViewport</span><span class="hl std">()</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/oldCairo-1.png" alt="plot of chunk oldCairo" class="plot" /></div></div>
+

@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html>
+  <head>
+    <style type="text/css">
+    @media print {
+      body { }
+      p.img { text-align: center; page-break-inside: avoid }
+      img.CC { display: inline }
+    }
+    @media screen {
+      body { max-width: 800px; margin: auto }
+      p.img { text-align: center }
+      img.CC { display: inline }
+    }
+    p.date {
+      font-size: smaller;
+      margin: 0;
+    }
+    p.versionHistory {
+      color: gray
+    }
+    p.versionHistory a {
+      color: gray
+    }
+    p.ref {
+      text-indent: -2em;
+      padding-left: 2em;
+    }
+    p.fig {
+      text-align: left;
+    }
+    p.fig img, img.plot {
+      box-shadow: 10px 10px 20px;
+      margin-top: 10px;
+      margin-bottom: 20px;      
+    }
+  </style>
+    <script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+};
+  </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+    <title>Porter-Duff Compositing Operators in R Graphics</title>
+  </head>
+  <body>
+    <h1>Porter-Duff Compositing Operators in R Graphics</h1>
+    <p><span style="font-style: italic">by Paul Murrell</span><a href="http://orcid.org"><img alt="" src="https://www.stat.auckland.ac.nz/~paul/ORCID/ORCiD.png" style="width: 16px; height: 16px; vertical-align: middle"/></a><span style="font-family: mono; font-size: small"><a href="http://orcid.org/0000-0002-3224-8858">http://orcid.org/0000-0002-3224-8858</a></span><span style="font-style: italic">, Thomas Lin Pedersen, and Panagiotis Skintzos</span>.
+  </p>
+    <p class="date">
+    Version 1:  
+    <rcode echo="FALSE" results="asis"><![CDATA[
+cat(format(Sys.Date(), "%A %d %B %Y"))
+    ]]></rcode>
+  </p>
+    <rcode id="init" echo="FALSE" message="FALSE" results="hide"><![CDATA[
+opts_chunk$set(comment=" ", tidy=FALSE, 
+               dev="png", ## dev="svg",
+               dpi=96)
+options(width=100)
+## For wonky desktop set up
+options(bitmapType="cairo")
+  ]]></rcode>
+    <rcode echo="FALSE" message="FALSE"><![CDATA[
+    library(grid)
+  ]]></rcode>
+    <hr/>
+    <p><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img class="CC" alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png"/></a><br/><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">This document</span>
+    is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative
+    Commons Attribution 4.0 International License</a>.
+  </p>
+    <hr/>
+    <p>
+    This document describes an upate to the behaviour of Porter-Duff compositing
+    operators in R graphics.
+  </p>
+    <div>
+      <h2>Table of Contents:</h2>
+      <ul style="list-style: none">
+        <li>
+          <a href="#intro">1. Introduction</a>
+        </li>
+        <li>
+          <a href="#porter-duff">2. Porter-Duff Definitions</a>
+        </li>
+        <li>
+          <a href="#discussion">3. Discussion</a>
+        </li>
+        <li>
+          <a href="#requirements">4. Technical requirements</a>
+        </li>
+        <li>
+          <a href="#Resources">5. Resources</a>
+        </li>
+        <li>
+          <a href="#references">6. References</a>
+        </li>
+      </ul>
+    </div>
+    <h2>
+      <a name="intro">1. Introduction</a>
+    </h2>
+    <p>
+    R graphics follows a "painter's model" where later drawing
+    occurs "on top of" earlier drawing.  For example, the following 
+    code defines 
+    two rectangles, one blue and one red.
+  </p>
+    <rcode><![CDATA[
+library(grid)
+  ]]></rcode>
+    <rcode><![CDATA[
+src <- rectGrob(x=2/3, y=1/3, width=.5, height=.5,
+                gp=gpar(col=NA, fill=rgb(0, 0, .9)))
+dst <- rectGrob(x=1/3, y=2/3, width=.5, height=.5,
+                gp=gpar(col=NA, fill=rgb(.7, 0, 0)))
+  ]]></rcode>
+    <p>
+    If we just draw these rectangles one at a time, first the red
+    and then the blue, the blue rectangle is drawn on top of the red
+    rectangle where they overlap.
+    In terms of Porter-Duff compositing operators (<a href="#PorterDuff"/>),
+    this "painter's model" corresponds to using an "over" operator
+    to combine the rectangles.
+  </p>
+    <rcode fig.width="2" fig.height="2"><![CDATA[
+grid.draw(dst)
+grid.draw(src)  
+  ]]></rcode>
+    <p>
+    R version 4.2.0 introduced the ability to explicitly set the
+    compositing operator for drawing (<a href="#murrell-groups-2021"/>).  
+    The 'grid' function <code>grid.group()</code> allows us
+    to specify a "source" object, a "destination" object,
+    and a compositing operator.
+    The default drawing behaviour in R 
+    corresponds to drawing a group and using an "over" compositing operator,
+    as shown by the following code.
+  <rcode fig.width="2" fig.height="2"><![CDATA[
+grid.group(src, "over", dst)    
+  ]]></rcode>
+    The next code demonstrates an alternative compositing operator.
+    We select the
+    "out" operator, which means that the source is only drawn 
+    where it does not 
+    overlap with the destination and the destination is not drawn at all.
+    In this case, the red rectangle takes a bite out of the blue rectangle.
+  </p>
+    <rcode fig.width="2" fig.height="2"><![CDATA[
+grid.group(src, "out", dst)    
+  ]]></rcode>
+    <p>
+    The operators that we can choose from include the full set of 
+    Porter-Duff operators:
+  </p>
+    <rcode echo="FALSE"><![CDATA[
+cat(substring(capture.output(print(grDevices:::compositingOperators[1:12])), 
+              5), 
+    sep="\n")
+  ]]></rcode>
+    <p>
+    Support for these operators was only added to 
+    graphics devices that were based on the Cairo Graphics library
+    (<a href="#cairo"/>) initially, 
+    under the assumption that that implementation
+    was "standard".  However, an attempt to add support to the graphics
+    device provided by the 'ggiraph' package highlighted some 
+    "non-standard" behaviour in the Cairo-based devices.
+    In particular, 
+    the "clear" operator and "src" operators, in R 4.2.0, produce the
+    results shown below. 
+  </p>
+    <p class="fig">
+      <a name="cairo-old"/>
+      <img src="OldBehaviour/figure/oldCairo-1.png"/>
+    </p>
+    <p>
+    However, the original 
+    Porter-Duff definition suggests that the behaviour should
+    look like the results below.  This is now the behaviour on the
+    Cairo-based devices in R 4.3.0.
+  </p>
+    <rcode echo="FALSE"><![CDATA[
+group <- function(src, op, dst) {
+    pushViewport(viewport(width=.95, height=.95))
+    grid.rect()
+    grid.group(src, op, dst)
+    grid.text(op, x=.1, y=.1, just=c("left", "bottom"),
+              gp=gpar(cex=.7, fontfamily="HersheySans"))
+    popViewport()
+}    
+  ]]></rcode>
+    <rcode echo="FALSE" fig.width="4" fig.height="2"><![CDATA[
+pushViewport(viewport(x=0, width=.5, just="left"))
+group(src, "clear", dst)
+popViewport()
+pushViewport(viewport(x=.5, width=.5, just="left"))
+group(src, "source", dst)
+popViewport()
+  ]]></rcode>
+    <p>
+    For completeness, the 
+    correct behaviour for graphics devices that support Porter-Duff
+    compositing operators should now conform
+    to the image below.  The Cairo devices and the <code>quartz()</code>
+    device currently support compositing operators and adhere to
+    this behaviour.
+  </p>
+    <rcode echo="FALSE"><![CDATA[
+porterDuff <- function(src, dst) {
+    grid.newpage()
+    pushViewport(viewport(width=.95, height=.95,
+                          layout=grid.layout(3, 4, respect=TRUE)))
+    pushViewport(viewport(layout.pos.row=1, layout.pos.col=1))
+    group(src, "over", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=1, layout.pos.col=2))
+    group(src, "clear", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=1, layout.pos.col=3))
+    group(src, "source", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=1, layout.pos.col=4))
+    group(src, "in", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=2, layout.pos.col=1))
+    group(src, "out", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=2, layout.pos.col=2))
+    group(src, "atop", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=2, layout.pos.col=3))
+    group(src, "dest", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=2, layout.pos.col=4))
+    group(src, "dest.over", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=3, layout.pos.col=1))
+    group(src, "dest.in", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=3, layout.pos.col=2))
+    group(src, "dest.out", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=3, layout.pos.col=3))
+    group(src, "dest.atop", dst)
+    popViewport()
+    pushViewport(viewport(layout.pos.row=3, layout.pos.col=4))
+    group(src, "xor", dst)
+    popViewport()
+    popViewport()
+    grid.text(names(dev.cur()), x=unit(1, "mm"), y=unit(1, "mm"),
+              just=c("left", "bottom"), 
+              gp=gpar(fontfamily="HersheySans", col="grey"))
+    grid.text(R.version.string, x=unit(1, "npc") - unit(1, "mm"), 
+              y=unit(1, "mm"),
+              just=c("right", "bottom"), 
+              gp=gpar(fontfamily="HersheySans", col="grey"))
+}    
+  ]]></rcode>
+    <rcode echo="FALSE" fig.width="8" fig.height="6"><![CDATA[
+porterDuff(src, dst)
+  ]]></rcode>
+    <p>
+    The remainder of this document surveys the definition of
+    Porter-Duff operators from a variety of sources in order to
+    explain/justify the choice of the
+    behaviour that is outlined above for R graphics devices.
+  </p>
+    <h2>
+      <a name="porter-duff">2. Porter-Duff Definitions</a>
+    </h2>
+    <p>
+    The canonical definition of the Porter-Duff operators is
+    the <a href="https://keithp.com/~keithp/porterduff/p253-porter.pdf">original article</a> 
+    from 1984.  The table below is taken from that 
+    article<a href="#copyright"/>.
+  </p>
+    <p>
+      <img alt="The table of Porter-Duff operators from the original article" src="pd-84.png"/>
+    </p>
+    <p>
+    This table actually describes the results for a single image pixel,
+    with $A$ and $B$ representing a source and a destination object
+    that partially overlap the
+    pixel, dividing it into four regions:  a region that is overlapped
+    by neither $A$ nor $B$, a region that is only overlapped by $A$,
+    a region that is only overlapped by $B$,
+    and a region that is overlapped by both $A$ and $B$.  
+    The "quadruple" column defines, for each compositing operator,
+    what the output should be for each of the four regions.
+    For example, the "clear" operator (the first row) says that all four regions
+    should end up empty, whereas the "xor" operator (the last row) says
+    that the region of no overlap should be empty, the region with only $A$
+    overlap should produce $A$, the region with only $B$ overlap should produce
+    $B$, and the region with both overlap should be empty.
+  </p>
+    <p>
+    The output for a pixel that is partially overlapped by both $A$ and $B$
+    requires a calculation involving the amount of coverage of $A$ and
+    $B$ (represented by $\alpha_A$ and $\alpha_B$), but if we just consider
+    the simpler case of pixels that are either entirely covered or not
+    covered at all ($\alpha_A$ and $\alpha_B$ are both either 0 or 1)
+    then the "quadruple" column describes what the output should be 
+    for pixels that are covered by neither $A$ nor $B$, pixels that
+    are only covered by $A$, pixels that are only covered by $B$,
+    and pixels that are covered by both $A$ and $B$.
+    This means that the "diagram" column shows not only how $A$ and
+    $B$ contribute to the output for a single pixel, but how $A$
+    and $B$ contribute to the image overall (for each of the 
+    compositing operators).
+    For example, the "clear" operator says that the output should be empty
+    for the entire image, whereas the "xor" operator says that the
+    output should be empty where pixels are covered by neither $A$ nor $B$,
+    the output should be $A$ where pixels are only covered by $A$, 
+    the output should be $B$ where pixels are only covered by $B$,
+    and the output should be empty where pixels are covered by both $A$ and $B$.
+  </p>
+    <p><a href="#pedersen-2013"/> provides a similar explanation,
+    with more detail and helpful diagrams.
+  </p>
+    <h3>The World Wide Web Consortium</h3>
+    <p>
+    The W3C Compositing and Blending Candidate Recommendation
+    (<a href="#w3c-compositing"/>),
+    which is referenced by the W3C Scalable Vector Graphics (SVG) 2
+    Candidate Recommendation
+    (<a href="#w3c-svg2"/>),
+    proposes the same behaviour (the images in the table below are taken
+    from the W3C Candidate Recommendation<a href="#w3c-copyright"/>;
+    in this table, the "copy" corresponds to the "source" operator).
+    Although these may only be "aspirational" images, given the source,
+    they seem like a reasonable indication of what might be the correct
+    result.
+  </p>
+    <style type="text/css">
+    table { border-spacing: 0; border-collapse: collapse; 
+            font-family: sans; font-size: 10pt; padding: 5px }
+    th { vertical-align: bottom; border-bottom: 2px solid #ddd; 
+         padding-top: 5px; padding-bottom: 5px }
+    td { vertical-align: top; border-top: 1px solid #ddd; 
+         padding-top: 5px; padding-bottom: 5px }
+  </style>
+    <table>
+      <thead style="">
+        <tr class="header">
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+        </tr>
+      </thead>
+      <tbody style="">
+        <tr>
+          <td align="left">src over</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_src-over-hack.svg"/>
+          </td>
+          <td align="left">clear</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_clr-hack.svg"/>
+          </td>
+          <td align="left">copy</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_src-hack.svg"/>
+          </td>
+          <td align="left">src in</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_src-in-hack.svg"/>
+          </td>
+        </tr>
+        <tr class="even">
+          <td align="left">src out</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_src-out-hack.svg"/>
+          </td>
+          <td align="left">src atop</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_src-atop-hack.svg"/>
+          </td>
+          <td align="left">dst</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_dst-hack.svg"/>
+          </td>
+          <td align="left">dst over</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_dst-over-hack.svg"/>
+          </td>
+        </tr>
+        <tr class="odd">
+          <td align="left">dst in</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_dst-in-hack.svg"/>
+          </td>
+          <td align="left">dst out</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_dst-out-hack.svg"/>
+          </td>
+          <td align="left">dst atop</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_dst-atop-hack.svg"/>
+          </td>
+          <td align="left">xor</td>
+          <td align="left">
+            <img src="SVG2compositing/PD_xor-hack.svg"/>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>SVG (1.1)</h3>
+    <p>
+    The W3C Scalable Vector Graphics (SVG) 1.1 Recommendation
+    (<a href="#w3c-svg"/>)
+    is the current official description of SVG.
+    This allows compositing operators via filters.
+    Quite a range of results is possible, but the possibilities
+    include a set of results that are consistent with 
+    the behaviour proposed in this document.
+  </p>
+    <p>
+    The code in <a href="svg.R">svg.R</a> generates a set of SVG files 
+    that are shown in the table below.
+    The blue rectangle is "source" and the red rectangle is "destination".
+    The images below are PNG versions (generated using Inkscape) to avoid
+    any issues with browser incompatibilities.
+    Only some of the operators are shown because the SVG filters allow 
+    "source" and "destination" to be swapped and the SVG filters do not 
+    support the "clear" operator.  For example, only "src in" is shown,
+    but we could get "dst in" by making the blue rectangle the "destination"
+    and the red rectangle the "source".
+  </p>
+    <table>
+      <thead style="">
+        <tr class="header">
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+          <th align="left">op</th>
+          <th align="left"/>
+        </tr>
+      </thead>
+      <tbody style="">
+        <tr>
+          <td align="left">over</td>
+          <td align="left">
+            <img src="SVGcompositing/svg-pd-simple-solid-over.png"/>
+          </td>
+          <td align="left">in</td>
+          <td align="left">
+            <img src="SVGcompositing/svg-pd-simple-solid-in.png"/>
+          </td>
+          <td align="left">out</td>
+          <td align="left">
+            <img src="SVGcompositing/svg-pd-simple-solid-out.png"/>
+          </td>
+          <td align="left">atop</td>
+          <td align="left">
+            <img src="SVGcompositing/svg-pd-simple-solid-atop.png"/>
+          </td>
+          <td align="left">xor</td>
+          <td align="left">
+            <img src="SVGcompositing/svg-pd-simple-solid-xor.png"/>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+    There appears to be 
+    <a href="https://lists.w3.org/Archives/Public/www-svg/2011Apr/0039.html">an 
+    interesting history</a> behind the development
+    of compositing operator support in SVG, which has lead to 
+    the wide range of possibilities.
+    Importantly, the following quote refers to
+    "true" Porter-Duff implementations
+    "blast"ing the entire canvas for the "clear" operator,
+    which is part of the behaviour proposed in this document,
+    although it appears to have been used as a reason for
+    not including "clear" support in SVG.
+  </p>
+    <pre>
+    The group was (understandably) concerned that the
+    introduction of some of the Porter-Duff operators could
+    affect pixels outside of the geometry of the object and
+    that would not be possible to implement on top of existing
+    rendering libraries. Notably ASV3 just sits on top of the
+    standard core libraries used in other products, whilst Batik
+    sits on top of Java2D. True Porter-Duff implementations
+    can blast the entire canvas if you do something like 'clear'
+    and so this was considered to be a bad precedent.
+  </pre>
+    <h3>Cairo Graphics</h3>
+    <p>
+    As mentioned in the <a href="#intro">Introduction</a>, the (naive) behaviour of
+    Porter-Duff compositing operators in the Cairo Graphics library
+    (just using <code>cairo_set_operator()</code>)
+    differs from the interpretation that is proposed in this
+    document.  The <a href="https://www.cairographics.org/operators/">Cairo
+    Graphics documentation</a> provides a detailed description
+    of the intended behaviour, and includes diagrams showing that 
+    the "clear" and "source" operators leave the "destination" 
+    object intact where it is not overlapped by the "source"
+    (as shown in the <a href="#cairo-old">image in the Introduction</a>).
+  </p>
+    <p>
+    The Cairo Graphics documentation describes this as a 
+    "bounded" interpretation of these operators.
+    Unfortunately, as shown in subsequent sections, this interpretation
+    is not consistent with other graphics systems, so would be difficult
+    to implement across graphics devices.
+    Furthermore, we believe it is not consistent with the original
+    Porter-Duff definitions, which we have (so far) been able to
+    implement across 
+    a variety of graphics devices.
+  </p>
+    <p>
+    Behaviour that is consistent with the original Porter-Duff 
+    definitions is possible using the Cairo Graphics library by 
+    adding a <code>cairo_push_group()</code> and 
+    <code>cairo_pop_group()</code> around each shape that is drawn
+    when the compositing operator is "clear" or "source".
+  </p>
+    <h3>Quartz 2D</h3>
+    <p>
+    Quartz 2D is a graphics system for MacOS computers
+    (<a href="#quartz"/>).
+    The (naive) implementation of Porter-Duff operators using
+    Quartz 2D (just using <code>CGContextSetBlendMode()</code>)
+    also differs from the interpretation that is proposed in this
+    document.  The table below shows the result, which is similar
+    to the Cairo graphics behaviour ("clear" and "source" retain
+    the "destination"), but has additional variations of its own:
+    the "in", "out", "dest.in", and "dest.atop" operators
+    also retain the "destination".
+  </p>
+    <p>
+      <img src="quartz-pd-simple-solid.png"/>
+    </p>
+    <p>
+    Behaviour that is consistent with the original Porter-Duff 
+    definitions is possible using Quartz 2D by 
+    drawing each shape (that is drawn
+    when the compositing operator is "clear", "source", "in", "out",
+    "dest.in", or "dest.atop")
+    on its own layer (with <code>CGLayerCreateWithContext()</code>).
+  </p>
+    <h3>Java 2D</h3>
+    <p>
+    Java 2D is a graphics system for the Java Programming Language
+    (<a href="#java2d"/>).
+    We have not tested the Java 2D behaviour directly,
+    but the Oracle <a href="https://docs.oracle.com/javase/tutorial/2d/advanced/compositing.html">Java2D Compositing Tutorial</a> 
+    contains diagrams that mostly show consistency with the original
+    Porter-Duff definitions.  However, the "clear" operator is an
+    exception, with behaviour that is consistent with the Cairo Graphics 
+    library (and not the Porter-Duff interpretation proposed in this
+    document).  The <a href="https://docs.oracle.com/javase/8/docs/api/java/awt/AlphaComposite.html">Java2D documentation for compositing operators</a>
+    contains descriptions that also sound consistent with the Cairo
+    Graphics behaviour for the "source" operator, but the Tutorial 
+    does not provide diagrams to confirm that.
+  </p>
+    <h2>
+      <a name="discussion">3. Discussion</a>
+    </h2>
+    <p>
+    This document sets out the defined behaviour of Porter-Duff 
+    operators for R graphics devices.  The proposed behaviour is
+    consistent with the original Porter-Duff definitions
+    and with W3C Candidate Recommendations and it can be implemented
+    using the W3C SVG Recommendation, using
+    the Cairo Graphics library, and using Quartz 2D (on MacOS).
+  </p>
+    <p>
+    The proposed behaviour is not consistent with Java2D, 
+    nor a naive implementation in either Cairo Graphics or Quartz 2D.
+    However, none of those three behaviours is fully consistent
+    with each other nor, we would argue, are they consistent
+    with the original Porter-Duff definitions.
+  </p>
+    <p>
+    One final point to note is 
+    that the current R graphics interface conflates compositing operators
+    with blend modes, which are conceptually separate stages in
+    the rendering process (see, for example, 
+    <a href="http://ssp.impulsetrain.com/porterduff.html">Porter/Duff Compositing and Blend Modes</a> by Søren Sandmann Pedersen, the W3C's <!--'-->
+    <a href="https://www.w3.org/TR/compositing-1/">Compositing and Blending Level 1</a>,
+    and the historical <a href="https://lists.w3.org/Archives/Public/www-svg/2011Apr/0039.html">Comments on SVG Compositing</a>).
+    In the current R graphics interface, 
+    selecting a compositing operator implies a
+    "normal" blend mode, while selecting a blend mode implies an
+    "over" compositing operator.
+    Future work may look at separating these concepts to allow
+    other combinations of compositing operators with blend modes,
+    although support for all possible combinations may be difficult
+    to achieve on many graphics devices.
+  </p>
+    <h2>
+      <a name="requirements">4. Technical requirements</a>
+    </h2>
+    <p>
+    The examples and discussion in this report relate to 
+    R version 4.3.0.
+  </p>
+    <p>
+    This report was generated within a Docker container
+    (see <a href="#Resources">Resources</a> section below).
+  </p>
+    <h2>
+      <a name="Resources">5. Resources</a>
+    </h2>
+    <ul>
+      <li>
+      The <a href="compositing.cml">raw source file</a> for this
+      report, a <a href="compositing.xml">valid XML</a>
+      transformation of the source file, a <a href="compositing.Rhtml">'knitr' document</a> generated from
+      the XML file, 
+      two <a href="toc.R">R</a> <a href="bib.R">files</a> and
+      the <a href="compositing.bib">bibtex file</a>
+      that are used to generate the table of contents and reference sections,
+      two <a href="common.xsl">XSL</a> <a href="knitr.xsl">files</a> and an 
+      <a href="knit.R">R file</a> that are used to transform the XML to
+      the 'knitr' document, and a <a href="Makefile">Makefile</a> that
+      contains code for the other transformations and coordinates
+      everything.  
+      These materials are also available
+      on <a href="https://github.com/pmur002/compositing-report/releases/tag/v1">github</a>.
+    </li>
+      <li>
+      This report was generated within a 
+      <a href="https://www.docker.com/">Docker</a> container.
+      The Docker command to build the report is included in the Makefile above.
+      The Docker image for the container is available from
+      <a href="https://hub.docker.com/r/pmur002/compositing-report/">Docker Hub</a>;
+      alternatively, the image can be rebuilt from its 
+      <a href="Dockerfile">Dockerfile</a>.
+    </li>
+    </ul>
+    <h2>How to cite this report</h2>
+    <p>
+    Murrell, P., Pedersen, T. L., and Skintzos, P. (2023). "Porter-Duff Compositing Operators in R Graphics" 
+    Technical Report 2023-??, Department of Statistics, The University of Auckland. 
+    Version 1.
+    [ <a href="how-to-cite.bib">bib</a> |
+      <a href="http://dx.doi.org/">DOI</a> | 
+      <a href="https://stattech.blogs.auckland.ac.nz/">http</a> ]
+  </p>
+    <h2>
+      <a name="references">6. References</a>
+    </h2>
+    <ul style="list-style-type: none">
+      <li>
+        <a name="R"/>
+      </li>
+      <li>
+        <a name="pedersen-2013"/>
+      </li>
+      <li>
+        <a name="PorterDuff"/>
+      </li>
+      <li>
+        <a name="w3c-compositing"/>
+      </li>
+      <li>
+        <a name="w3c-svg2"/>
+      </li>
+      <li>
+        <a name="w3c-svg"/>
+      </li>
+      <li>
+        <a name="cairo"/>
+      </li>
+      <li>
+        <a name="quartz"/>
+      </li>
+      <li>
+        <a name="java2d"/>
+      </li>
+      <li>
+        <a name="murrell-groups-2021"/>
+      </li>
+    </ul>
+    <h2>Footnotes</h2>
+    <div>
+      <p class="footnote"><a name="copyright"/>
+      The copyright notice at the bottom of the front page of the article
+      states that "Permission to copy without fee all or part of this
+      material is granted provided that the copies are not made or
+      distributed for direct commercial advantage, the ACM copyright
+      notice and the title of the publication and its date appear, and
+      notice is given that copying is by permission of the
+      Association for Computing Machinery."
+      Consider this notice given.
+    </p>
+      <p class="footnote"><a name="w3c-copyright"/>
+      Copyright © 2014 World Wide Web Consortium. <a href="https://www.w3.org/Consortium/Legal/2023/doc-license">https://www.w3.org/Consortium/Legal/2023/doc-license</a>.
+  </p>
+    </div>
+    <hr/>
+    <p><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img class="CC" alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png"/></a><br/><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">This document</span>
+    by <span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">Paul
+    Murrell</span> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative
+    Commons Attribution 4.0 International License</a>.
+  </p>
+  </body>
+</html>
