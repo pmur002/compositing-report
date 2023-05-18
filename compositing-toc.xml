@@ -702,6 +702,83 @@ porterDuff(src, dst)
         <a name="pkg:ragg"/>
       </li>
     </ul>
+    <h2>Appendix: An accidental fix</h2>
+    <p>
+    The refactoring of the code for the Cairo devices (to correct the
+    behaviour of Porter-Duff compositing operators) accidentally fixed
+    a bug in the drawing of shapes that have both a (stroked) border and a
+    (filled) interior
+    <em>when a mask is in force</em>.  This section briefly outlines the
+    bug and explains the (accidental) fix.
+  </p>
+    <p>
+    The issue revolves around the fact that drawing 
+    a shape that has both a border
+    and an interior (e.g., a circle, but not a line) actually 
+    involves <em>two</em> drawing operations:  one to fill the interior
+    and one to stroke the border.  This is not obvious when drawing
+    with opaque colours and/or thin borders, 
+    but becomes obvious with semitransparent colours and thick borders.
+    For example, the following code draws a circle with a thick opaque blue
+    border and an opaque  red fill.
+    The fill is drawn first and then the border is drawn on top.
+    What we cannot see is that the blue border partially overlaps
+    the red fill (because the border is drawn along the circumference
+    of the circle and a thick border extends both inside and outside the
+    circumference of the circle).
+  </p>
+    <rcode fig.width="2" fig.height="2"><![CDATA[
+grid.circle(r=.3, gp=gpar(col=rgb(0,0,1), fill=rgb(1,0,0), lwd=20))
+  ]]></rcode>
+    <p>
+    This becomes obvious with the following code, which 
+    draws a circle with a thick 
+    <em>semitransparent</em> blue border and a semitransparent red fill.
+    The border is centred on the circumference of the circle, extending
+    both outside and inside the circumference, and the part of the 
+    semitransparent blue border
+    that extends inside the circumference overlaps with the semitransparent 
+    red fill (producing a purple region).
+  </p>
+    <rcode fig.width="2" fig.height="2"><![CDATA[
+grid.circle(r=.3, gp=gpar(col=rgb(0,0,1,.5), fill=rgb(1,0,0,.5), lwd=20))
+  ]]></rcode>
+    <p>
+    Now consider the following code, which draws the first 
+    circle (opaque border and opaque fill) with a <em>semitransparent
+    mask</em> in force.  This is the correct result:  the fill is drawn
+    with the mask in force, so the fill becomes semitransparent, and then
+    the border is drawn with the mask in force, so the border also
+    becomes semitransparent (and we can see the border overlapping the fill).
+  </p>
+    <rcode fig.width="2" fig.height="2"><![CDATA[
+pushViewport(viewport(mask=rectGrob(gp=gpar(fill=rgb(0,0,0,.5)))))
+grid.circle(r=.3, gp=gpar(col=rgb(0,0,1), fill=rgb(1,0,0), lwd=20))
+  ]]></rcode>
+    <p>
+    However, in R versions 4.2.*, we would actually get the result below.
+    The fill is semitransparent and the border is semitransparent,
+    but there is no overlap between border and fill.
+    This is the bug that was accidentally fixed.
+  </p>
+    <rcode id="groupmask" echo="FALSE" fig.width="2" fig.height="2"><![CDATA[
+pushViewport(viewport(mask=rectGrob(gp=gpar(fill=rgb(0,0,0,.5)))))
+grid.group(circleGrob(r=.3, gp=gpar(col=rgb(0,0,1), fill=rgb(1,0,0), lwd=20)))
+  ]]></rcode>
+    <p>
+    The result above is arguably the more useful result, but it is
+    inconsistent with the normal R graphics behaviour
+    (stroke and fill are separate drawing operations).
+    Fortunately, we can get the result above (on purpose) if we draw the circle
+    (opaque border and fill) as a <em>group</em> (with the mask in force).
+    This code draws the (opaque) fill then the (opaque) border as a separate
+    image (that looks like the first image in this section) 
+    and then adds that image to the main image with the mask in force,
+    which turns the whole (separate) image semitransparent.
+  </p>
+    <rcode eval="FALSE"><![CDATA[
+<<groupmask>>
+  ]]></rcode>
     <h2>Footnotes</h2>
     <div>
       <p class="footnote"><a name="copyright"/>
