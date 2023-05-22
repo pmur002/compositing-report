@@ -164,7 +164,7 @@ cat(substring(capture.output(print(grDevices:::compositingOperators[1:12])),
     <p>
     Support for these operators was only added to 
     graphics devices that were based on the Cairo Graphics library
-    (<a href="#cairo"/>) initially, 
+     initially (<a href="#cairo"/>),
     under the assumption that that implementation
     was "standard".  However, an attempt to add support to the graphics
     device provided by the 'ggiraph' package (<a href="#pkg:ggiraph"/>)
@@ -332,9 +332,9 @@ porterDuff(src, dst)
     which is referenced by the W3C Scalable Vector Graphics (SVG) 2
     Candidate Recommendation
     (<a href="#w3c-svg2"/>),
-    proposes the same behaviour (the images in the table below are taken
+    proposes the same behaviour.  The images in the table below are taken
     from the W3C Candidate Recommendation<a href="#w3c-copyright"/>;
-    in this table, the "copy" corresponds to the "source" operator).
+    in this table, the "copy" corresponds to the "source" operator.
     Although these may only be "aspirational" images, given the source,
     they seem like a reasonable indication of what might be the correct
     result.
